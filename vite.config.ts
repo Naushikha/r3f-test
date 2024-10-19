@@ -6,6 +6,6 @@ import basicSsl from "@vitejs/plugin-basic-ssl";
 export default defineConfig({
   plugins: [
     react(),
-    // basicSsl() // uncomment for VR testing
+    basicSsl() // uncomment for VR testing
   ],
 });

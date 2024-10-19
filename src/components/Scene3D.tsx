@@ -5,6 +5,7 @@ import { Mesh } from "three";
 import { useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Stats, OrbitControls } from "@react-three/drei";
+import { TextureLoader } from "three/src/loaders/TextureLoader.js";
 
 function Car3D() {
   const [active, setActive] = useState(false);
@@ -77,6 +78,7 @@ function Box(props: ThreeElements["mesh"]) {
 }
 
 function Scene3D() {
+  const colorMap = useLoader(TextureLoader, "/outside.jpg");
   return (
     <Canvas>
       <ambientLight intensity={Math.PI / 2} />
@@ -93,6 +95,10 @@ function Scene3D() {
       <Car3D />
       <Sophia3D />
       <OrbitControls />
+      <mesh>
+        <sphereGeometry args={[500, 60, 40]} />
+        <meshBasicMaterial map={colorMap} side={THREE.BackSide} />
+      </mesh>
       <Stats />
     </Canvas>
   );
