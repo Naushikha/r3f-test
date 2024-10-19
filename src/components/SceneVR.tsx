@@ -1,23 +1,27 @@
+import { Canvas } from "@react-three/fiber";
+import { XR, createXRStore } from "@react-three/xr";
+import { useState } from "react";
+
+const store = createXRStore();
 function SceneVR() {
-  //   return (
-  //     <Canvas>
-  //       <ambientLight intensity={Math.PI / 2} />
-  //       <spotLight
-  //         position={[10, 10, 10]}
-  //         angle={0.15}
-  //         penumbra={1}
-  //         decay={0}
-  //         intensity={Math.PI}
-  //       />
-  //       <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI} />
-  //       <Box position={[-1.2, 0, 0]} />
-  //       <Box position={[1.2, 0, 0]} />
-  //       <Car3D />
-  //       <Sophia3D />
-  //       <OrbitControls />
-  //       <Stats />
-  //     </Canvas>
-  //   );
+  const [red, setRed] = useState(false);
+  return (
+    <>
+      <button onClick={() => store.enterAR()}>Enter AR</button>
+      <Canvas>
+        <XR store={store}>
+          <mesh
+            pointerEventsType={{ deny: "grab" }}
+            onClick={() => setRed(!red)}
+            position={[0, 1, -1]}
+          >
+            <boxGeometry />
+            <meshBasicMaterial color={red ? "red" : "blue"} />
+          </mesh>
+        </XR>
+      </Canvas>
+    </>
+  );
 }
 
 export default SceneVR;
