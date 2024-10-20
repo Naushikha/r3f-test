@@ -4,8 +4,9 @@ import { Canvas, useFrame, ThreeElements } from "@react-three/fiber";
 import { Mesh } from "three";
 import { useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Stats, OrbitControls } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import { TextureLoader } from "three/src/loaders/TextureLoader.js";
+import { Perf } from "r3f-perf";
 
 function Car3D() {
   const [active, setActive] = useState(false);
@@ -81,6 +82,7 @@ function Scene3D() {
   const colorMap = useLoader(TextureLoader, "/outside.jpg");
   return (
     <Canvas>
+      <Perf position="top-left" style={{ zIndex: "100000000000" }} />
       <ambientLight intensity={Math.PI / 2} />
       <spotLight
         position={[10, 10, 10]}
@@ -99,7 +101,20 @@ function Scene3D() {
         <sphereGeometry args={[500, 60, 40]} />
         <meshBasicMaterial map={colorMap} side={THREE.BackSide} />
       </mesh>
-      <Stats />
+      <Html
+        style={{ userSelect: "none" }}
+        occlude="blending"
+        scale={[0.2, 0.2, 0.2]}
+        position={[0, 1, -1]}
+        transform
+      >
+        <iframe
+          title="embed"
+          width={700}
+          height={500}
+          src="https://threejs.org/"
+        />
+      </Html>
     </Canvas>
   );
 }
