@@ -3,6 +3,7 @@ import Scene3D from "./components/Scene3D";
 import SceneVR from "./components/SceneVR";
 import SceneRollerCoaster from "./components/SceneRollerCoaster";
 import SceneVR360 from "./components/SceneVR360";
+import MyAR from "./r3f-mindar/MyAR";
 
 function App() {
   return (
@@ -10,7 +11,8 @@ function App() {
       {/* <Scene3D /> */}
       {/* <SceneVR /> */}
       {/* <SceneRollerCoaster /> */}
-      <SceneVR360 />
+      {/* <SceneVR360 /> */}
+      <MyAR />
     </div>
   );
 }
