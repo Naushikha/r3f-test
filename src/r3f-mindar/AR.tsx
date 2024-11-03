@@ -1,11 +1,14 @@
-import { Canvas, useThree } from "@react-three/fiber";
 import {
-  faces as FaceMeshFaces,
-  uvs as FaceMeshUVs,
-} from "mind-ar/src/face-target/face-geometry/face-data";
+  // Canvas,
+  useThree,
+} from "@react-three/fiber";
+// import {
+//   faces as FaceMeshFaces,
+//   uvs as FaceMeshUVs,
+// } from "mind-ar/src/face-target/face-geometry/face-data";
 import { Matrix4, PerspectiveCamera, Quaternion, Vector3 } from "three";
 import React, {
-  Suspense,
+  // Suspense,
   forwardRef,
   useCallback,
   useEffect,
@@ -14,7 +17,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { atom, useAtomValue, useSetAtom } from "jotai";
+import {
+  atom,
+  // useAtomValue,
+  useSetAtom,
+} from "jotai";
 
 import { Controller as FaceTargetController } from "mind-ar/src/face-target/controller";
 import { Html } from "@react-three/drei";
@@ -455,3 +462,5 @@ const ARProvider = forwardRef<any, ARProviderProps>(
 // };
 
 // export { ARView, ARAnchor, ARFaceMesh };
+
+export { ARProvider };

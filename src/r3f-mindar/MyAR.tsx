@@ -61,6 +61,38 @@ interface ARProviderRef {
   switchCamera: () => void;
 }
 
+interface ARViewProps {
+  children: ReactNode;
+  autoplay?: boolean;
+  imageTargetURL: string;
+  maxTrack?: number;
+  filterMinCF?: number;
+  filterBeta?: number;
+  warmupTolerance?: number;
+  missTolerance?: number;
+  flipUserCamera?: boolean;
+  onReady?: () => void;
+  onError?: (error: Error) => void;
+  // Add any other props you might want to spread
+  [key: string]: any; // To allow other props (`...rest`)
+}
+
+interface ARViewRef {
+  startTracking: () => void;
+  stopTracking: () => void;
+  switchCamera: () => void;
+  current: HTMLCanvasElement | null;
+}
+
+interface ARAnchorProps {
+  children: ReactNode;
+  target?: number;
+  onAnchorFound?: () => void;
+  onAnchorLost?: () => void;
+  // Add other props you want to spread (`...rest`) if needed
+  [key: string]: any; // To allow other props (like the rest)
+}
+
 const ARProvider = forwardRef<ARProviderRef, ARProviderProps>(
   (
     {
@@ -274,29 +306,6 @@ const ARProvider = forwardRef<ARProviderRef, ARProviderProps>(
   }
 );
 
-interface ARViewProps {
-  children: ReactNode;
-  autoplay?: boolean;
-  imageTargetURL: string;
-  maxTrack?: number;
-  filterMinCF?: number;
-  filterBeta?: number;
-  warmupTolerance?: number;
-  missTolerance?: number;
-  flipUserCamera?: boolean;
-  onReady?: () => void;
-  onError?: (error: Error) => void;
-  // Add any other props you might want to spread
-  [key: string]: any; // To allow other props (`...rest`)
-}
-
-interface ARViewRef {
-  startTracking: () => void;
-  stopTracking: () => void;
-  switchCamera: () => void;
-  current: HTMLCanvasElement | null;
-}
-
 const ARView = forwardRef<ARViewRef, ARViewProps>(
   (
     {
@@ -353,15 +362,6 @@ const ARView = forwardRef<ARViewRef, ARViewProps>(
   }
 );
 
-interface ARAnchorProps {
-  children: ReactNode;
-  target?: number;
-  onAnchorFound?: () => void;
-  onAnchorLost?: () => void;
-  // Add other props you want to spread (`...rest`) if needed
-  [key: string]: any; // To allow other props (like the rest)
-}
-
 const ARAnchor: React.FC<ARAnchorProps> = ({
   children,
   target = 0,
@@ -406,7 +406,7 @@ const ARAnchor: React.FC<ARAnchorProps> = ({
 function MyAR() {
   return (
     <ARView
-      imageTargets="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.mind"
+      imageTargetURL="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.mind"
       filterMinCF={1}
       filterBeta={10000}
       missTolerance={0}

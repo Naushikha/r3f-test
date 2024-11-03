@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts"],"version":"5.6.3"}
+{"root":["./src/App.tsx","./src/global.d.ts","./src/main.tsx","./src/vite-env.d.ts","./src/components/Scene3D.tsx","./src/components/SceneRollerCoaster.tsx","./src/components/SceneVR.tsx","./src/components/SceneVR360.tsx","./src/r3f-mindar/AR.tsx","./src/r3f-mindar/MyAR.tsx","./src/r3f-mindar/hooks.tsx","./src/r3f-mindar/index.tsx","./src/r3f-mindar/mind-ar.d.ts"],"version":"5.6.3"}

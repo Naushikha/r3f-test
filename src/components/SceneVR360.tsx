@@ -1,6 +1,6 @@
 import { Canvas, useLoader } from "@react-three/fiber";
 import { XR, createXRStore } from "@react-three/xr";
-import { useState } from "react";
+// import { useState } from "react";
 import * as THREE from "three";
 
 import { TextureLoader } from "three/src/loaders/TextureLoader.js";

@@ -78,7 +78,7 @@ function Box(props: ThreeElements["mesh"]) {
 
 const store = createXRStore();
 function SceneVR() {
-  const [red, setRed] = useState(false);
+  // const [red, setRed] = useState(false);
   return (
     <>
       <button onClick={() => store.enterAR()}>Enter AR</button>
