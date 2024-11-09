@@ -5,6 +5,7 @@ import Webcam from "react-webcam";
 import { Controller as ImageTargetController } from "mind-ar/dist/mindar-image.prod.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
+import { Environment } from "@react-three/drei";
 
 const ARContext = createContext();
 const anchorsAtom = atom({});
@@ -22,8 +23,7 @@ const AR = memo(function AR({
     container,
 }) {
 
-    const { camera, gl } = useThree();
-    // const environmentMap = useLoader(RGBELoader, '/metro_vijzelgracht_1k.hdr')
+    const { camera } = useThree();
     const [ready, setReady] = useState(false);
     const setAnchors = useSetAtom(anchorsAtom);
 
@@ -235,6 +235,7 @@ function ARCanvas({
         <div id="ar-canvas-container" ref={canvasContainerRef} style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
             <Canvas
             >
+                <Environment files="/metro_vijzelgracht_1k.hdr" />
                 <AR imageTargets={imageTargets} webcam={webcamRef} container={canvasContainerRef} filterMinCF={filterMinCF} filterBeta={filterBeta}>
                     {children}
                 </AR>
@@ -287,5 +288,4 @@ function ARParent() {
 
 export default ARParent;
 
-// TODO: add environment map
 // TODO: fix events; on anchor found/lost, ui loading/scanning etc.
