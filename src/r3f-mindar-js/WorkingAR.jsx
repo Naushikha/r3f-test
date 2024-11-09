@@ -1,10 +1,10 @@
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Matrix4, Quaternion, Vector3 } from "three";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import Webcam from "react-webcam";
 import { Controller as ImageTargetController } from "mind-ar/dist/mindar-image.prod.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
-// import './App.css'
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
 
 const ARContext = createContext();
 const anchorsAtom = atom({});
@@ -22,7 +22,8 @@ const AR = memo(function AR({
     container,
 }) {
 
-    const { camera } = useThree();
+    const { camera, gl } = useThree();
+    // const environmentMap = useLoader(RGBELoader, '/metro_vijzelgracht_1k.hdr')
     const [ready, setReady] = useState(false);
     const setAnchors = useSetAtom(anchorsAtom);
 
@@ -224,20 +225,22 @@ function ARAnchor({
 
 function ARCanvas({
     children,
-    arEnabled = true,
     imageTargets,
-    container,
+    filterMinCF,
+    filterBeta
 }) {
-    const webcam = useRef();
+    const webcamRef = useRef();
+    const canvasContainerRef = useRef();
     return (
-        <>
-            <Canvas>
-                <AR imageTargets={imageTargets} webcam={webcam} container={container}>
+        <div id="ar-canvas-container" ref={canvasContainerRef} style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+            <Canvas
+            >
+                <AR imageTargets={imageTargets} webcam={webcamRef} container={canvasContainerRef} filterMinCF={filterMinCF} filterBeta={filterBeta}>
                     {children}
                 </AR>
             </Canvas>
             <Webcam
-                ref={webcam}
+                ref={webcamRef}
                 style={{
                     position: 'absolute',
                     top: 0,
@@ -245,45 +248,44 @@ function ARCanvas({
                     zIndex: -2,
                 }}
             />
-        </>
+        </div>
     )
 }
 
-function Plane() {
+// for testing
+function Car3D() {
+    const [active, setActive] = useState(false);
+    const gltf = useLoader(GLTFLoader, "/car.glb");
     return (
-        <mesh>
-            <planeGeometry args={[1, 0.55]} />
-            <meshBasicMaterial transparent color={0x0000ff} opacity={0.5} />
+        <mesh
+            scale={active ? 1.5 : 1}
+            onClick={(e) => {
+                e.stopPropagation();
+                setActive(!active);
+            }}
+        >
+            <primitive object={gltf.scene} />
         </mesh>
-    )
-}
-
-function Box() {
-    return (
-        <mesh position={[5, 0, 0]} rotation={[0, 0.5, 0]}>
-            <boxGeometry args={[1, 1, 1]} />
-            <meshNormalMaterial />
-        </mesh>
-    )
+    );
 }
 
 function ARParent() {
-    const container = useRef();
     return (
-        <div id="canvas-container" ref={container} style={{ width: '100vw', height: '100vh' }}>
-
-            <ARCanvas
-                container={container}
-                imageTargets="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind"
-            >
-                <ARAnchor>
-                    <Plane />
-                </ARAnchor>
-                <Box />
-            </ARCanvas>
-        </div>
-
+        <ARCanvas
+            imageTargets="/car.mind"
+            filterMinCF={0.001}
+            filterBeta={0.001}
+        >
+            <ambientLight />
+            <pointLight position={[10, 10, 10]} />
+            <ARAnchor target={0}>
+                <Car3D />
+            </ARAnchor>
+        </ARCanvas>
     )
 }
 
 export default ARParent;
+
+// TODO: add environment map
+// TODO: fix events; on anchor found/lost, ui loading/scanning etc.
