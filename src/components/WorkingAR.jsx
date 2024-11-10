@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { Matrix4, Quaternion, Vector3 } from "three";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import Webcam from "react-webcam";
@@ -230,10 +230,43 @@ function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
   );
 }
 
+function UI_Scan() {
+  return (
+    <>
+      <h1>Scanning</h1>
+    </>
+  );
+}
+
+function UI_Loading() {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        color: "#fff",
+        fontSize: "2rem",
+        zIndex: 1000,
+      }}
+    >
+      Loading...
+    </div>
+  );
+}
+
 function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
   const webcamRef = useRef();
   const canvasContainerRef = useRef();
   const setWebcamReady = useSetAtom(webcamReadyAtom);
+  const anchors = useAtomValue(anchorsAtom);
+  const [UIScanVisibility, setUIScanVisibility] = useState(false);
 
   const handleWebcam = useCallback(() => {
     if (webcamRef.current) {
@@ -243,6 +276,13 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
       });
     }
   }, [webcamRef]);
+
+  useEffect(() => {
+    const isAnyVisible = Object.values(anchors).some(
+      (anchor) => !invisibleMatrix.equals(new Matrix4().fromArray(anchor))
+    );
+    setUIScanVisibility(!isAnyVisible);
+  }, [anchors]);
 
   return (
     <div
@@ -255,18 +295,21 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
         position: "relative",
       }}
     >
-      <Canvas>
-        <Environment files="/metro_vijzelgracht_1k.hdr" />
-        <ARProvider
-          imageTargetURL={imageTargetURL}
-          webcamRef={webcamRef}
-          containerRef={canvasContainerRef}
-          filterMinCF={filterMinCF}
-          filterBeta={filterBeta}
-        >
-          {children}
-        </ARProvider>
-      </Canvas>
+      {UIScanVisibility && <UI_Scan />}
+      <Suspense fallback={<UI_Loading />}>
+        <Canvas>
+          <Environment files="/metro_vijzelgracht_1k.hdr" />
+          <ARProvider
+            imageTargetURL={imageTargetURL}
+            webcamRef={webcamRef}
+            containerRef={canvasContainerRef}
+            filterMinCF={filterMinCF}
+            filterBeta={filterBeta}
+          >
+            {children}
+          </ARProvider>
+        </Canvas>
+      </Suspense>
       <Webcam
         ref={webcamRef}
         onUserMedia={handleWebcam}
@@ -320,6 +363,5 @@ function ARParent() {
 
 export default ARParent;
 
-// TODO: fix events; ui loading/scanning etc.
-// TODO: convert to typescript
 // TODO: implement camera switching mechanism
+// TODO: convert to typescript
