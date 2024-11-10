@@ -3,9 +3,7 @@ import "./App.css";
 // import SceneVR from "./components/SceneVR";
 // import SceneRollerCoaster from "./components/SceneRollerCoaster";
 // import SceneVR360 from "./components/SceneVR360";
-// import MyAR from "./r3f-mindar/MyAR";
-import AR from "./r3f-mindar-js/WorkingAR.jsx";
-// import AR from "./r3f-mindar-js/Proper.jsx";
+import AR from "./components/WorkingAR.jsx";
 
 function App() {
   return (
@@ -14,7 +12,6 @@ function App() {
       {/* <SceneVR /> */}
       {/* <SceneRollerCoaster /> */}
       {/* <SceneVR360 /> */}
-      {/* <MyAR /> */}
       <AR />
     </div>
   );

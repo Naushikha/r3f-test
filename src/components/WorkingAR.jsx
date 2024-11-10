@@ -313,3 +313,5 @@ function ARParent() {
 export default ARParent;
 
 // TODO: fix events; on anchor found/lost, ui loading/scanning etc.
+// TODO: convert to typescript
+// TODO: implement camera switching mechanism
