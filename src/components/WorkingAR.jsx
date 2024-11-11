@@ -5,7 +5,7 @@ import Webcam from "react-webcam";
 import { Controller as ImageTargetController } from "mind-ar/dist/mindar-image.prod.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
-import { Environment } from "@react-three/drei";
+import { Environment, OrbitControls } from "@react-three/drei";
 
 const anchorsAtom = atom({});
 const webcamReadyAtom = atom(false);
@@ -107,7 +107,7 @@ function ARProvider({
     const ratio = proj[5] / proj[0]; // (r-1) / (t -b)
 
     camera.fov = fov;
-    camera.near = near;
+    // camera.near = near; // This clips out 3d objects in the canvas!
     camera.far = far;
     camera.aspect =
       containerRef.current.clientWidth / containerRef.current.clientHeight;
@@ -249,6 +249,14 @@ const UI_SwitchCamButton = () => {
   };
 
   return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        zIndex: 1,
+      }}
+    >
     <button
       onClick={handleClick}
       style={{
@@ -273,16 +281,23 @@ const UI_SwitchCamButton = () => {
       >
         🔄
       </span>
-      Flip Cam
+        <b>SWITCH CAM</b>
     </button>
+    </div>
   );
 };
 
 function UI_Scan() {
   return (
-    <>
-      <h1>Scanning</h1>
-    </>
+    <div
+      style={{
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+      }}
+    >
+      <h1 style={{ color: "white" }}>Scanning...</h1>
+    </div>
   );
 }
 
@@ -290,7 +305,7 @@ function UI_Loading() {
   return (
     <div
       style={{
-        position: "fixed",
+        position: "absolute",
         top: 0,
         left: 0,
         width: "100vw",
@@ -356,9 +371,8 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
             containerRef={canvasContainerRef}
             filterMinCF={filterMinCF}
             filterBeta={filterBeta}
-          >
+          />
             {children}
-          </ARProvider>
         </Canvas>
       </Suspense>
       <Webcam
@@ -380,6 +394,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
 }
 
 // for testing
+// https://stackoverflow.com/questions/68813736/use-the-same-gltf-model-twice-in-react-three-fiber-drei-three-js
 function Car3D() {
   const [active, setActive] = useState(false);
   const gltf = useLoader(GLTFLoader, "/car.glb");
@@ -391,7 +406,7 @@ function Car3D() {
         setActive(!active);
       }}
     >
-      <primitive object={gltf.scene} />
+      <primitive object={gltf.scene.clone()} />
     </mesh>
   );
 }
@@ -412,6 +427,10 @@ function ARParent() {
                     <meshStandardMaterial color="orange" />
                 </mesh> */}
       </ARAnchor>
+      <group scale={[1, 1, 1]} position={[0, 0, 0]} rotation={[0, 0, 0]}>
+        <Car3D />
+      </group>
+      <OrbitControls />
     </ARCanvas>
   );
 }
@@ -419,3 +438,9 @@ function ARParent() {
 export default ARParent;
 
 // TODO: convert to typescript
+// TODO: rename anchors to targets
+
+// on anchor lost >> returns to 3D, activates orbitcontrols
+// on anchor found >> returns to AR
+
+// manually switch to 3D / AR
