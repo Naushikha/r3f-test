@@ -9,6 +9,9 @@ import { Environment } from "@react-three/drei";
 
 const anchorsAtom = atom({});
 const webcamReadyAtom = atom(false);
+const isWebcamFacingUserAtom = atom(false);
+const flipUserCameraAtom = atom(false);
+
 const invisibleMatrix = new Matrix4().set(
   0,
   0,
@@ -203,6 +206,7 @@ function ARProvider({
 function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
   const ref = useRef();
   const anchors = useAtomValue(anchorsAtom);
+  const flipUserCamera = useAtomValue(flipUserCameraAtom);
 
   useEffect(() => {
     if (ref.current) {
@@ -224,11 +228,55 @@ function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
   }, [anchors, target, onAnchorFound, onAnchorLost]);
 
   return (
-    <group ref={ref} visible={false} matrixAutoUpdate={false}>
-      {children}
+    <group scale={[flipUserCamera ? -1 : 1, 1, 1]}>
+      <group ref={ref} visible={false} matrixAutoUpdate={false}>
+        {children}
+      </group>
     </group>
   );
 }
+
+const UI_SwitchCamButton = () => {
+  const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
+  const setIsWebcamFacingUser = useSetAtom(isWebcamFacingUserAtom);
+  // You need to flip the camera in selfie mode
+  const flipUserCamera = useAtomValue(flipUserCameraAtom);
+  const setFlipUserCamera = useSetAtom(flipUserCameraAtom);
+
+  const handleClick = () => {
+    setIsWebcamFacingUser(!isWebcamFacingUser);
+    setFlipUserCamera(!flipUserCamera);
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{
+        padding: "10px",
+        fontSize: "16px",
+        cursor: "pointer",
+        border: "none",
+        backgroundColor: "#007bff",
+        color: "#fff",
+        borderRadius: "4px",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+      }}
+    >
+      <span
+        style={{
+          display: "inline-block",
+          transform: isWebcamFacingUser ? "rotateY(180deg)" : "rotateY(0deg)",
+          transition: "transform 0.3s",
+        }}
+      >
+        🔄
+      </span>
+      Flip Cam
+    </button>
+  );
+};
 
 function UI_Scan() {
   return (
@@ -266,6 +314,8 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
   const canvasContainerRef = useRef();
   const setWebcamReady = useSetAtom(webcamReadyAtom);
   const anchors = useAtomValue(anchorsAtom);
+  const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
+  const flipUserCamera = useAtomValue(flipUserCameraAtom);
   const [UIScanVisibility, setUIScanVisibility] = useState(false);
 
   const handleWebcam = useCallback(() => {
@@ -295,6 +345,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
         position: "relative",
       }}
     >
+      <UI_SwitchCamButton />
       {UIScanVisibility && <UI_Scan />}
       <Suspense fallback={<UI_Loading />}>
         <Canvas>
@@ -319,6 +370,10 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
           left: 0,
           zIndex: -2,
         }}
+        videoConstraints={{
+          facingMode: isWebcamFacingUser ? "user" : "environment",
+        }}
+        mirrored={isWebcamFacingUser && flipUserCamera}
       />
     </div>
   );
@@ -363,5 +418,4 @@ function ARParent() {
 
 export default ARParent;
 
-// TODO: implement camera switching mechanism
 // TODO: convert to typescript
