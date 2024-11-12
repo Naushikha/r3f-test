@@ -12,7 +12,7 @@ import {
   OrbitControls,
 } from "@react-three/drei";
 
-const anchorsAtom = atom({});
+const targetsAtom = atom({});
 const webcamReadyAtom = atom(false);
 const isWebcamFacingUserAtom = atom(false);
 const flipUserCameraAtom = atom(false);
@@ -51,8 +51,8 @@ function ARProvider({
 }) {
   const { camera } = useThree();
   const isInitialRender = useRef(true);
-  const anchors = useAtomValue(anchorsAtom);
-  const setAnchors = useSetAtom(anchorsAtom);
+  const targets = useAtomValue(targetsAtom);
+  const setTargets = useSetAtom(targetsAtom);
   const setIsAnyTargetVisible = useSetAtom(isAnyTargetVisibleAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
   const webcamReady = useAtomValue(webcamReadyAtom);
@@ -147,8 +147,8 @@ function ARProvider({
         if (data.type === "updateMatrix") {
           const { targetIndex, worldMatrix } = data;
 
-          setAnchors((anchors) => ({
-            ...anchors,
+          setTargets((targets) => ({
+            ...targets,
             [targetIndex]:
               worldMatrix !== null
                 ? new Matrix4()
@@ -214,11 +214,11 @@ function ARProvider({
 
   useEffect(() => {
     // TODO: This could be moved to onUpdate function to reduce CPU cycles
-    const isAnyVisible = Object.values(anchors).some(
-      (anchor) => !invisibleMatrix.equals(new Matrix4().fromArray(anchor))
+    const isAnyVisible = Object.values(targets).some(
+      (target) => !invisibleMatrix.equals(new Matrix4().fromArray(target))
     );
     setIsAnyTargetVisible(isAnyVisible);
-  }, [anchors]);
+  }, [targets]);
 
   useEffect(() => {
     if (isInitialRender.current) {
@@ -242,32 +242,105 @@ function ARProvider({
   return <>{children}</>;
 }
 
-function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
+function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
+  const webcamRef = useRef();
+  const canvasContainerRef = useRef();
+  const setWebcamReady = useSetAtom(webcamReadyAtom);
+  const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
+  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
+  const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
+  const flipUserCamera = useAtomValue(flipUserCameraAtom);
+
+  const handleWebcam = useCallback(() => {
+    if (webcamRef.current) {
+      webcamRef.current.video.addEventListener("loadedmetadata", () => {
+        setWebcamReady(true);
+        console.log("Webcam is ready");
+      });
+    }
+  }, [webcamRef]);
+
+  return (
+    <div
+      id="ar-canvas-container"
+      ref={canvasContainerRef}
+      style={{
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <UI_SwitchCamButton />
+      <UI_FullScreenButton />
+      {!isAnyTargetVisible && <UI_Scan />}
+      <Suspense fallback={<UI_Loading />}>
+        <Canvas>
+          {/* <GizmoHelper
+            alignment="bottom-right" // widget alignment within scene
+            margin={[80, 80]} // widget margins (X, Y)
+          >
+            <GizmoViewport
+              axisColors={["red", "green", "blue"]}
+              labelColor="black"
+            />
+          </GizmoHelper> */}
+          <OrbitControls enabled={isViewingMode3D} />
+          <Environment files="/metro_vijzelgracht_1k.hdr" />
+          <ARProvider
+            imageTargetURL={imageTargetURL}
+            webcamRef={webcamRef}
+            containerRef={canvasContainerRef}
+            filterMinCF={filterMinCF}
+            filterBeta={filterBeta}
+          />
+          {children}
+        </Canvas>
+      </Suspense>
+      <Webcam
+        ref={webcamRef}
+        onUserMedia={handleWebcam}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          zIndex: -2,
+        }}
+        videoConstraints={{
+          facingMode: isWebcamFacingUser ? "user" : "environment",
+        }}
+        mirrored={isWebcamFacingUser && flipUserCamera}
+      />
+    </div>
+  );
+}
+
+function ARTarget({ children, index = 0, onTargetFound, onTargetLost }) {
   const groupRef = useRef();
-  const anchors = useAtomValue(anchorsAtom);
+  const targets = useAtomValue(targetsAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
 
   useEffect(() => {
     if (groupRef.current && !isViewingMode3D) {
-      if (anchors[target]) {
-        groupRef.current.matrix = new Matrix4().fromArray(anchors[target]);
+      if (targets[index]) {
+        groupRef.current.matrix = new Matrix4().fromArray(targets[index]);
         // Check if this is being hidden by the controller onUpdate function
         if (invisibleMatrix.equals(groupRef.current.matrix)) {
-          if (groupRef.current.visible !== false && onAnchorLost)
-            onAnchorLost();
+          if (groupRef.current.visible !== false && onTargetLost)
+            onTargetLost();
           groupRef.current.visible = false;
         } else {
-          if (groupRef.current.visible !== true && onAnchorFound)
-            onAnchorFound();
+          if (groupRef.current.visible !== true && onTargetFound)
+            onTargetFound();
           groupRef.current.visible = true;
         }
       } else {
-        if (groupRef.current.visible !== false && onAnchorLost) onAnchorLost();
+        if (groupRef.current.visible !== false && onTargetLost) onTargetLost();
         groupRef.current.visible = false;
       }
     }
-  }, [anchors, target, onAnchorFound, onAnchorLost]);
+  }, [targets, index, onTargetFound, onTargetLost]);
 
   useEffect(() => {
     if (isViewingMode3D && groupRef.current.visible) {
@@ -440,79 +513,6 @@ function UI_Loading() {
   );
 }
 
-function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
-  const webcamRef = useRef();
-  const canvasContainerRef = useRef();
-  const setWebcamReady = useSetAtom(webcamReadyAtom);
-  const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
-  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
-  const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
-  const flipUserCamera = useAtomValue(flipUserCameraAtom);
-
-  const handleWebcam = useCallback(() => {
-    if (webcamRef.current) {
-      webcamRef.current.video.addEventListener("loadedmetadata", () => {
-        setWebcamReady(true);
-        console.log("Webcam is ready");
-      });
-    }
-  }, [webcamRef]);
-
-  return (
-    <div
-      id="ar-canvas-container"
-      ref={canvasContainerRef}
-      style={{
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-        position: "relative",
-      }}
-    >
-      <UI_SwitchCamButton />
-      <UI_FullScreenButton />
-      {!isAnyTargetVisible && <UI_Scan />}
-      <Suspense fallback={<UI_Loading />}>
-        <Canvas>
-          {/* <GizmoHelper
-            alignment="bottom-right" // widget alignment within scene
-            margin={[80, 80]} // widget margins (X, Y)
-          >
-            <GizmoViewport
-              axisColors={["red", "green", "blue"]}
-              labelColor="black"
-            />
-          </GizmoHelper> */}
-          <OrbitControls enabled={isViewingMode3D} />
-          <Environment files="/metro_vijzelgracht_1k.hdr" />
-          <ARProvider
-            imageTargetURL={imageTargetURL}
-            webcamRef={webcamRef}
-            containerRef={canvasContainerRef}
-            filterMinCF={filterMinCF}
-            filterBeta={filterBeta}
-          />
-          {children}
-        </Canvas>
-      </Suspense>
-      <Webcam
-        ref={webcamRef}
-        onUserMedia={handleWebcam}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          zIndex: -2,
-        }}
-        videoConstraints={{
-          facingMode: isWebcamFacingUser ? "user" : "environment",
-        }}
-        mirrored={isWebcamFacingUser && flipUserCamera}
-      />
-    </div>
-  );
-}
-
 // for testing
 // https://stackoverflow.com/questions/68813736/use-the-same-gltf-model-twice-in-react-three-fiber-drei-three-js
 function Car3D() {
@@ -531,22 +531,22 @@ function Car3D() {
   );
 }
 
-function ARParent() {
+function ARExperience() {
   return (
     <ARCanvas imageTargetURL="/car.mind" filterMinCF={0.001} filterBeta={0.001}>
       <ambientLight />
       <pointLight position={[10, 10, 10]} />
-      <ARAnchor
-        target={0}
-        onAnchorFound={() => console.log("Found image target!")}
-        onAnchorLost={() => console.log("Lost image target!")}
+      <ARTarget
+        index={0}
+        onTargetFound={() => console.log("Found image target!")}
+        onTargetLost={() => console.log("Lost image target!")}
       >
         <Car3D />
         {/* <mesh>
                     <boxGeometry args={[1, 1, 0.1]} />
                     <meshStandardMaterial color="orange" />
                 </mesh> */}
-      </ARAnchor>
+      </ARTarget>
       {/* <group scale={[1, 1, 1]} position={[0, 0, 0]} rotation={[0, 0, 0]}>
         <Car3D />
       </group> */}
@@ -554,8 +554,6 @@ function ARParent() {
   );
 }
 
-export default ARParent;
+export default ARExperience;
 
 // TODO: convert to typescript
-// TODO: rename anchors to targets / whole terminology is fucked up
-
