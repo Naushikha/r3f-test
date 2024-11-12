@@ -5,7 +5,12 @@ import Webcam from "react-webcam";
 import { Controller as ImageTargetController } from "mind-ar/dist/mindar-image.prod.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
-import { Environment, OrbitControls } from "@react-three/drei";
+import {
+  Environment,
+  GizmoHelper,
+  GizmoViewport,
+  OrbitControls,
+} from "@react-three/drei";
 
 const anchorsAtom = atom({});
 const webcamReadyAtom = atom(false);
@@ -224,6 +229,9 @@ function ARProvider({
     setIsAnyTargetVisible(false); // this doesnt get set automatically
     if (isViewingMode3D) {
       stopTracking();
+      camera.position.set(1, 1, 3);
+      camera.rotation.set(0, 0, 0);
+      camera.lookAt(0, 0, 0);
     } else {
       camera.position.set(0, 0, 5);
       camera.rotation.set(0, 0, 0);
@@ -235,50 +243,97 @@ function ARProvider({
 }
 
 function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
-  const ref = useRef();
+  const groupRef = useRef();
   const anchors = useAtomValue(anchorsAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
 
   useEffect(() => {
-    if (ref.current && !isViewingMode3D) {
+    if (groupRef.current && !isViewingMode3D) {
       if (anchors[target]) {
-        ref.current.matrix = new Matrix4().fromArray(anchors[target]);
+        groupRef.current.matrix = new Matrix4().fromArray(anchors[target]);
         // Check if this is being hidden by the controller onUpdate function
-        if (invisibleMatrix.equals(ref.current.matrix)) {
-          if (ref.current.visible !== false && onAnchorLost) onAnchorLost();
-          ref.current.visible = false;
+        if (invisibleMatrix.equals(groupRef.current.matrix)) {
+          if (groupRef.current.visible !== false && onAnchorLost)
+            onAnchorLost();
+          groupRef.current.visible = false;
         } else {
-          if (ref.current.visible !== true && onAnchorFound) onAnchorFound();
-          ref.current.visible = true;
+          if (groupRef.current.visible !== true && onAnchorFound)
+            onAnchorFound();
+          groupRef.current.visible = true;
         }
       } else {
-        if (ref.current.visible !== false && onAnchorLost) onAnchorLost();
-        ref.current.visible = false;
+        if (groupRef.current.visible !== false && onAnchorLost) onAnchorLost();
+        groupRef.current.visible = false;
       }
     }
   }, [anchors, target, onAnchorFound, onAnchorLost]);
 
   useEffect(() => {
-    if (isViewingMode3D && ref.current.visible) {
-      console.log("isViewingMode3D && ref.current.visible");
-      ref.current.position.set(0, 0, 0);
-      ref.current.rotation.set(0, 0, 0);
-      ref.current.scale.set(1, 1, 1);
-      ref.current.updateMatrix();
+    if (isViewingMode3D && groupRef.current.visible) {
+      console.log("isViewingMode3D && groupRef.current.visible");
+
+      groupRef.current.position.set(0, 0, 0);
+      groupRef.current.rotation.set(0, 0, 0);
+      groupRef.current.scale.set(1, 1, 1);
+      groupRef.current.updateMatrix();
     }
-    if (!isViewingMode3D && ref.current.visible) {
-      console.log("!isViewingMode3D && ref.current.visible");
-      ref.current.matrix = invisibleMatrix;
+    if (!isViewingMode3D && groupRef.current.visible) {
+      console.log("!isViewingMode3D && groupRef.current.visible");
+      groupRef.current.matrix = invisibleMatrix;
     }
   }, [isViewingMode3D]);
 
   return (
     <group scale={[flipUserCamera ? -1 : 1, 1, 1]}>
-      <group ref={ref} visible={false} matrixAutoUpdate={false}>
+      <group ref={groupRef} visible={false} matrixAutoUpdate={false}>
         {children}
       </group>
     </group>
+  );
+}
+
+const UI_ButtonStyle = {
+  padding: "10px",
+  fontSize: "16px",
+  cursor: "pointer",
+  border: "none",
+  backgroundColor: "#000000",
+  color: "#fff",
+  borderRadius: "4px",
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+};
+
+function UI_FullScreenButton() {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+      });
+    }
+  };
+
+  return (
+    <button
+      onClick={toggleFullscreen}
+      style={{
+        ...UI_ButtonStyle,
+        position: "absolute",
+        top: 0,
+        right: 0,
+        zIndex: 1,
+      }}
+    >
+      {isFullscreen ? "🔲" : "🔳"}
+    </button>
   );
 }
 
@@ -310,23 +365,11 @@ const UI_SwitchCamButton = () => {
         bottom: 0,
         right: 0,
         zIndex: 1,
+        display: "flex",
+        flexDirection: "row",
       }}
     >
-      <button
-        onClick={handleSwitchCam}
-        style={{
-          padding: "10px",
-          fontSize: "16px",
-          cursor: "pointer",
-          border: "none",
-          backgroundColor: "#000000",
-          color: "#fff",
-          borderRadius: "4px",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
+      <button onClick={handleSwitchCam} style={UI_ButtonStyle}>
         <span
           style={{
             display: "inline-block",
@@ -339,21 +382,7 @@ const UI_SwitchCamButton = () => {
         <b>SWITCH CAM</b>
       </button>
       {isAnyTargetVisible && (
-        <button
-          onClick={handleSwitch3DAR}
-          style={{
-            padding: "10px",
-            fontSize: "16px",
-            cursor: "pointer",
-            border: "none",
-            backgroundColor: "#000000",
-            color: "#fff",
-            borderRadius: "4px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
+        <button onClick={handleSwitch3DAR} style={UI_ButtonStyle}>
           <span
             style={{
               display: "inline-block",
@@ -376,12 +405,14 @@ function UI_Scan() {
   return (
     <div
       style={{
+        ...UI_ButtonStyle,
         position: "absolute",
         bottom: 0,
         left: 0,
+        letterSpacing: "4px",
       }}
     >
-      <h1 style={{ color: "white" }}>Scanning...</h1>
+      <b>SCANNING...</b>
     </div>
   );
 }
@@ -439,9 +470,19 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
       }}
     >
       <UI_SwitchCamButton />
+      <UI_FullScreenButton />
       {!isAnyTargetVisible && <UI_Scan />}
       <Suspense fallback={<UI_Loading />}>
         <Canvas>
+          {/* <GizmoHelper
+            alignment="bottom-right" // widget alignment within scene
+            margin={[80, 80]} // widget margins (X, Y)
+          >
+            <GizmoViewport
+              axisColors={["red", "green", "blue"]}
+              labelColor="black"
+            />
+          </GizmoHelper> */}
           <OrbitControls enabled={isViewingMode3D} />
           <Environment files="/metro_vijzelgracht_1k.hdr" />
           <ARProvider
@@ -518,7 +559,3 @@ export default ARParent;
 // TODO: convert to typescript
 // TODO: rename anchors to targets / whole terminology is fucked up
 
-// on anchor lost >> returns to 3D, activates orbitcontrols
-// on anchor found >> returns to AR
-
-// manually switch to 3D / AR
