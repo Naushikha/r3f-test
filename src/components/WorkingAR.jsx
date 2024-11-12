@@ -171,7 +171,9 @@ function ARProvider({
     let postMatrixs = [];
     for (let i = 0; i < imageTargetDimensions.length; i++) {
       const position = new Vector3();
-      const quaternion = new Quaternion();
+      const quaternion = new Quaternion()
+        // this fixes the output and places content properly
+        .setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
       const scale = new Vector3();
       const [markerWidth, markerHeight] = imageTargetDimensions[i];
       position.x = markerWidth / 2;
@@ -379,7 +381,7 @@ const UI_ButtonStyle = {
   pointerEvents: "auto",
 };
 
-const UI_HUD = () => {
+function UI_HUD() {
   const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
   const setIsWebcamFacingUser = useSetAtom(isWebcamFacingUserAtom);
   // You need to flip the camera in selfie mode
@@ -492,7 +494,7 @@ const UI_HUD = () => {
       </button>
     </div>
   );
-};
+}
 
 function UI_Loading() {
   // https://drei.docs.pmnd.rs/loaders/progress-use-progress
@@ -536,6 +538,7 @@ function Car3D() {
   return (
     <mesh
       scale={active ? 1.5 : 1}
+      rotation={[0, -1.57, 0]}
       onClick={(e) => {
         e.stopPropagation();
         setActive(!active);
@@ -572,5 +575,4 @@ function ARExperience() {
 export default ARExperience;
 
 // TODO: convert to typescript
-// TODO: apply rotation fix for models
 // TODO: add green screen shader and marki stock video
