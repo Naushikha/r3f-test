@@ -48,7 +48,7 @@ function ARProvider({
   const isInitialRender = useRef(true);
   const anchors = useAtomValue(anchorsAtom);
   const setAnchors = useSetAtom(anchorsAtom);
-  const setIsAnyTargetVisibleAtom = useSetAtom(isAnyTargetVisibleAtom);
+  const setIsAnyTargetVisible = useSetAtom(isAnyTargetVisibleAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
   const webcamReady = useAtomValue(webcamReadyAtom);
   const controllerRef = useRef(null);
@@ -212,7 +212,7 @@ function ARProvider({
     const isAnyVisible = Object.values(anchors).some(
       (anchor) => !invisibleMatrix.equals(new Matrix4().fromArray(anchor))
     );
-    setIsAnyTargetVisibleAtom(isAnyVisible);
+    setIsAnyTargetVisible(isAnyVisible);
   }, [anchors]);
 
   useEffect(() => {
@@ -221,6 +221,7 @@ function ARProvider({
       console.log(camera);
       return;
     }
+    setIsAnyTargetVisible(false); // this doesnt get set automatically
     if (isViewingMode3D) {
       stopTracking();
     } else {
@@ -243,7 +244,6 @@ function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
     if (ref.current && !isViewingMode3D) {
       if (anchors[target]) {
         ref.current.matrix = new Matrix4().fromArray(anchors[target]);
-        console.log("Updating matrix");
         // Check if this is being hidden by the controller onUpdate function
         if (invisibleMatrix.equals(ref.current.matrix)) {
           if (ref.current.visible !== false && onAnchorLost) onAnchorLost();
