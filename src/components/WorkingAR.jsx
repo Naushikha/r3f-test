@@ -11,6 +11,8 @@ const anchorsAtom = atom({});
 const webcamReadyAtom = atom(false);
 const isWebcamFacingUserAtom = atom(false);
 const flipUserCameraAtom = atom(false);
+const isViewingMode3DAtom = atom(false); // Switch between AR / 3D
+const isAnyTargetVisibleAtom = atom(false);
 
 const invisibleMatrix = new Matrix4().set(
   0,
@@ -43,7 +45,11 @@ function ARProvider({
   containerRef,
 }) {
   const { camera } = useThree();
+  const isInitialRender = useRef(true);
+  const anchors = useAtomValue(anchorsAtom);
   const setAnchors = useSetAtom(anchorsAtom);
+  const setIsAnyTargetVisibleAtom = useSetAtom(isAnyTargetVisibleAtom);
+  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
   const webcamReady = useAtomValue(webcamReadyAtom);
   const controllerRef = useRef(null);
 
@@ -180,6 +186,7 @@ function ARProvider({
   const stopTracking = useCallback(() => {
     if (controllerRef.current) {
       controllerRef.current.stopProcessVideo();
+      console.log("AR processing stopped.");
     }
   }, [controllerRef]);
 
@@ -200,6 +207,29 @@ function ARProvider({
     }
   }, [webcamReady, startTracking]);
 
+  useEffect(() => {
+    // TODO: This could be moved to onUpdate function to reduce CPU cycles
+    const isAnyVisible = Object.values(anchors).some(
+      (anchor) => !invisibleMatrix.equals(new Matrix4().fromArray(anchor))
+    );
+    setIsAnyTargetVisibleAtom(isAnyVisible);
+  }, [anchors]);
+
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      console.log(camera);
+      return;
+    }
+    if (isViewingMode3D) {
+      stopTracking();
+    } else {
+      camera.position.set(0, 0, 5);
+      camera.rotation.set(0, 0, 0);
+      startTracking();
+    }
+  }, [isViewingMode3D]);
+
   return <>{children}</>;
 }
 
@@ -207,11 +237,13 @@ function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
   const ref = useRef();
   const anchors = useAtomValue(anchorsAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
+  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
 
   useEffect(() => {
-    if (ref.current) {
+    if (ref.current && !isViewingMode3D) {
       if (anchors[target]) {
         ref.current.matrix = new Matrix4().fromArray(anchors[target]);
+        console.log("Updating matrix");
         // Check if this is being hidden by the controller onUpdate function
         if (invisibleMatrix.equals(ref.current.matrix)) {
           if (ref.current.visible !== false && onAnchorLost) onAnchorLost();
@@ -226,6 +258,20 @@ function ARAnchor({ children, target = 0, onAnchorFound, onAnchorLost }) {
       }
     }
   }, [anchors, target, onAnchorFound, onAnchorLost]);
+
+  useEffect(() => {
+    if (isViewingMode3D && ref.current.visible) {
+      console.log("isViewingMode3D && ref.current.visible");
+      ref.current.position.set(0, 0, 0);
+      ref.current.rotation.set(0, 0, 0);
+      ref.current.scale.set(1, 1, 1);
+      ref.current.updateMatrix();
+    }
+    if (!isViewingMode3D && ref.current.visible) {
+      console.log("!isViewingMode3D && ref.current.visible");
+      ref.current.matrix = invisibleMatrix;
+    }
+  }, [isViewingMode3D]);
 
   return (
     <group scale={[flipUserCamera ? -1 : 1, 1, 1]}>
@@ -243,9 +289,18 @@ const UI_SwitchCamButton = () => {
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
   const setFlipUserCamera = useSetAtom(flipUserCameraAtom);
 
-  const handleClick = () => {
+  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
+  const setIsViewingMode3D = useSetAtom(isViewingMode3DAtom);
+
+  const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
+
+  const handleSwitchCam = () => {
     setIsWebcamFacingUser(!isWebcamFacingUser);
     setFlipUserCamera(!flipUserCamera);
+  };
+
+  const handleSwitch3DAR = () => {
+    setIsViewingMode3D(!isViewingMode3D);
   };
 
   return (
@@ -257,32 +312,62 @@ const UI_SwitchCamButton = () => {
         zIndex: 1,
       }}
     >
-    <button
-      onClick={handleClick}
-      style={{
-        padding: "10px",
-        fontSize: "16px",
-        cursor: "pointer",
-        border: "none",
-        backgroundColor: "#007bff",
-        color: "#fff",
-        borderRadius: "4px",
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-      }}
-    >
-      <span
+      <button
+        onClick={handleSwitchCam}
         style={{
-          display: "inline-block",
-          transform: isWebcamFacingUser ? "rotateY(180deg)" : "rotateY(0deg)",
-          transition: "transform 0.3s",
+          padding: "10px",
+          fontSize: "16px",
+          cursor: "pointer",
+          border: "none",
+          backgroundColor: "#000000",
+          color: "#fff",
+          borderRadius: "4px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
         }}
       >
-        🔄
-      </span>
+        <span
+          style={{
+            display: "inline-block",
+            transform: isWebcamFacingUser ? "rotateY(180deg)" : "rotateY(0deg)",
+            transition: "transform 0.3s",
+          }}
+        >
+          🔄
+        </span>
         <b>SWITCH CAM</b>
-    </button>
+      </button>
+      {isAnyTargetVisible && (
+        <button
+          onClick={handleSwitch3DAR}
+          style={{
+            padding: "10px",
+            fontSize: "16px",
+            cursor: "pointer",
+            border: "none",
+            backgroundColor: "#000000",
+            color: "#fff",
+            borderRadius: "4px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              transform: isWebcamFacingUser
+                ? "rotateY(180deg)"
+                : "rotateY(0deg)",
+              transition: "transform 0.3s",
+            }}
+          >
+            {isViewingMode3D ? "🌐" : "📦"}
+          </span>
+          <b>{isViewingMode3D ? "AR" : "3D"}</b>
+        </button>
+      )}
     </div>
   );
 };
@@ -328,10 +413,10 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
   const webcamRef = useRef();
   const canvasContainerRef = useRef();
   const setWebcamReady = useSetAtom(webcamReadyAtom);
-  const anchors = useAtomValue(anchorsAtom);
+  const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
+  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
   const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
-  const [UIScanVisibility, setUIScanVisibility] = useState(false);
 
   const handleWebcam = useCallback(() => {
     if (webcamRef.current) {
@@ -341,13 +426,6 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
       });
     }
   }, [webcamRef]);
-
-  useEffect(() => {
-    const isAnyVisible = Object.values(anchors).some(
-      (anchor) => !invisibleMatrix.equals(new Matrix4().fromArray(anchor))
-    );
-    setUIScanVisibility(!isAnyVisible);
-  }, [anchors]);
 
   return (
     <div
@@ -361,9 +439,10 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
       }}
     >
       <UI_SwitchCamButton />
-      {UIScanVisibility && <UI_Scan />}
+      {!isAnyTargetVisible && <UI_Scan />}
       <Suspense fallback={<UI_Loading />}>
         <Canvas>
+          <OrbitControls enabled={isViewingMode3D} />
           <Environment files="/metro_vijzelgracht_1k.hdr" />
           <ARProvider
             imageTargetURL={imageTargetURL}
@@ -372,7 +451,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
             filterMinCF={filterMinCF}
             filterBeta={filterBeta}
           />
-            {children}
+          {children}
         </Canvas>
       </Suspense>
       <Webcam
@@ -427,10 +506,9 @@ function ARParent() {
                     <meshStandardMaterial color="orange" />
                 </mesh> */}
       </ARAnchor>
-      <group scale={[1, 1, 1]} position={[0, 0, 0]} rotation={[0, 0, 0]}>
+      {/* <group scale={[1, 1, 1]} position={[0, 0, 0]} rotation={[0, 0, 0]}>
         <Car3D />
-      </group>
-      <OrbitControls />
+      </group> */}
     </ARCanvas>
   );
 }
@@ -438,7 +516,7 @@ function ARParent() {
 export default ARParent;
 
 // TODO: convert to typescript
-// TODO: rename anchors to targets
+// TODO: rename anchors to targets / whole terminology is fucked up
 
 // on anchor lost >> returns to 3D, activates orbitcontrols
 // on anchor found >> returns to AR
