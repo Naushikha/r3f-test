@@ -318,6 +318,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
 function ARTarget({ children, index = 0, onTargetFound, onTargetLost }) {
   const groupRef = useRef();
   const targets = useAtomValue(targetsAtom);
+  const setTargets = useSetAtom(targetsAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
 
@@ -354,6 +355,14 @@ function ARTarget({ children, index = 0, onTargetFound, onTargetLost }) {
     if (!isViewingMode3D && groupRef.current.visible) {
       console.log("!isViewingMode3D && groupRef.current.visible");
       groupRef.current.matrix = invisibleMatrix;
+      // TODO: I do not like this approach; we are making a child element update the core target,
+      // but this workaround is necessary to clear the previous prediction matrices
+      setTargets((targets) => ({
+        ...targets,
+        [index]: invisibleMatrix.toArray(),
+      }));
+      groupRef.current.visible = false;
+      if (onTargetLost) onTargetLost(); // consider as target has been lost
     }
   }, [isViewingMode3D]);
 
