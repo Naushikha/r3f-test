@@ -4,6 +4,8 @@ import { useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import { ARCanvas, ARTarget } from "core/AR";
 import ChromaKeyMaterial from "./core/shader/ChromaKeyMaterial";
+import { Html } from "@react-three/drei";
+import ReactPlayer from "react-player";
 
 // for testing
 // https://stackoverflow.com/questions/68813736/use-the-same-gltf-model-twice-in-react-three-fiber-drei-three-js
@@ -32,7 +34,7 @@ interface GreenScreenPlaneProps {
   chromaKeySpill: number;
   position: [number, number, number];
   sizeMultiplier: number;
-  playback: boolean;
+  playing: boolean;
 }
 
 const GreenScreenPlane: React.FC<GreenScreenPlaneProps> = ({
@@ -43,7 +45,7 @@ const GreenScreenPlane: React.FC<GreenScreenPlaneProps> = ({
   chromaKeySimilarity = 0.01,
   chromaKeySmoothness = 0.18,
   chromaKeySpill = 0.1,
-  playback = false,
+  playing = false,
 }) => {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoAspect, setVideoAspect] = useState(1);
@@ -94,10 +96,10 @@ const GreenScreenPlane: React.FC<GreenScreenPlaneProps> = ({
 
   useEffect(() => {
     if (videoLoaded) {
-      if (playback) greenScreenVidRef.current.play();
+      if (playing) greenScreenVidRef.current.play();
       else greenScreenVidRef.current.pause();
     }
-  }, [playback]);
+  }, [playing]);
 
   return videoLoaded ? (
     <mesh
@@ -141,8 +143,24 @@ function ARExperience() {
           chromaKeySpill={0.01}
           position={[0, 1, 0]}
           sizeMultiplier={1.35}
-          playback={markiPlay}
+          playing={markiPlay}
         />
+        <Html
+          style={{ userSelect: "none" }}
+          occlude="blending"
+          zIndexRange={[10, 0]}
+          scale={[0.1, 0.1, 0.1]}
+          position={[0.5, 0.5, -0.5]}
+          transform
+          className="testing-html"
+        >
+          <ReactPlayer
+            url="https://www.youtube.com/watch?v=ZpUYjpKg9KY"
+            playing={markiPlay}
+            loop={true}
+            style={{ visibility: markiPlay ? "visible" : "hidden" }} // https://github.com/pmndrs/drei/issues/1323
+          />
+        </Html>
         {/* <mesh>
                       <boxGeometry args={[1, 1, 0.1]} />
                       <meshStandardMaterial color="orange" />

@@ -18,6 +18,7 @@
     "mind-ar": "^1.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-player": "^2.16.0",
     "react-webcam": "^7.2.0",
     "three": "^0.169.0",
     "usehooks-ts": "^3.1.0"
