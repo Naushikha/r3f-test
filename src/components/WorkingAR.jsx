@@ -10,6 +10,7 @@ import {
   GizmoHelper,
   GizmoViewport,
   OrbitControls,
+  useProgress,
 } from "@react-three/drei";
 
 const targetsAtom = atom({});
@@ -271,9 +272,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
         position: "relative",
       }}
     >
-      <UI_SwitchCamButton />
-      <UI_FullScreenButton />
-      {!isAnyTargetVisible && <UI_Scan />}
+      <UI_HUD />
       <Suspense fallback={<UI_Loading />}>
         <Canvas>
           {/* <GizmoHelper
@@ -377,9 +376,21 @@ const UI_ButtonStyle = {
   display: "flex",
   alignItems: "center",
   gap: "8px",
+  pointerEvents: "auto",
 };
 
-function UI_FullScreenButton() {
+const UI_HUD = () => {
+  const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
+  const setIsWebcamFacingUser = useSetAtom(isWebcamFacingUserAtom);
+  // You need to flip the camera in selfie mode
+  const flipUserCamera = useAtomValue(flipUserCameraAtom);
+  const setFlipUserCamera = useSetAtom(flipUserCameraAtom);
+
+  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
+  const setIsViewingMode3D = useSetAtom(isViewingMode3DAtom);
+
+  const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
@@ -394,34 +405,6 @@ function UI_FullScreenButton() {
     }
   };
 
-  return (
-    <button
-      onClick={toggleFullscreen}
-      style={{
-        ...UI_ButtonStyle,
-        position: "absolute",
-        top: 0,
-        right: 0,
-        zIndex: 1,
-      }}
-    >
-      {isFullscreen ? "🔲" : "🔳"}
-    </button>
-  );
-}
-
-const UI_SwitchCamButton = () => {
-  const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
-  const setIsWebcamFacingUser = useSetAtom(isWebcamFacingUserAtom);
-  // You need to flip the camera in selfie mode
-  const flipUserCamera = useAtomValue(flipUserCameraAtom);
-  const setFlipUserCamera = useSetAtom(flipUserCameraAtom);
-
-  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
-  const setIsViewingMode3D = useSetAtom(isViewingMode3DAtom);
-
-  const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
-
   const handleSwitchCam = () => {
     setIsWebcamFacingUser(!isWebcamFacingUser);
     setFlipUserCamera(!flipUserCamera);
@@ -435,27 +418,23 @@ const UI_SwitchCamButton = () => {
     <div
       style={{
         position: "absolute",
-        bottom: 0,
-        right: 0,
         zIndex: 1,
-        display: "flex",
-        flexDirection: "row",
+        width: "100vw",
+        height: "100vh",
+        pointerEvents: "none",
       }}
     >
-      <button onClick={handleSwitchCam} style={UI_ButtonStyle}>
-        <span
-          style={{
-            display: "inline-block",
-            transform: isWebcamFacingUser ? "rotateY(180deg)" : "rotateY(0deg)",
-            transition: "transform 0.3s",
-          }}
-        >
-          🔄
-        </span>
-        <b>SWITCH CAM</b>
-      </button>
-      {isAnyTargetVisible && (
-        <button onClick={handleSwitch3DAR} style={UI_ButtonStyle}>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          right: 0,
+          display: "flex",
+          flexDirection: "row",
+          gap: "16px",
+        }}
+      >
+        <button onClick={handleSwitchCam} style={UI_ButtonStyle}>
           <span
             style={{
               display: "inline-block",
@@ -465,32 +444,66 @@ const UI_SwitchCamButton = () => {
               transition: "transform 0.3s",
             }}
           >
-            {isViewingMode3D ? "🌐" : "📦"}
+            🔄
           </span>
-          <b>{isViewingMode3D ? "AR" : "3D"}</b>
+          <b>SWITCH CAM</b>
         </button>
+        {isAnyTargetVisible && (
+          <button onClick={handleSwitch3DAR} style={UI_ButtonStyle}>
+            <span
+              style={{
+                display: "inline-block",
+                transform: isWebcamFacingUser
+                  ? "rotateY(180deg)"
+                  : "rotateY(0deg)",
+                transition: "transform 0.3s",
+              }}
+            >
+              {isViewingMode3D ? "🌐" : "📦"}
+            </span>
+            <b>{isViewingMode3D ? "AR" : "3D"}</b>
+          </button>
+        )}
+      </div>
+      {!isAnyTargetVisible && (
+        <div
+          style={{
+            ...UI_ButtonStyle,
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            letterSpacing: "4px",
+            cursor: "default",
+          }}
+        >
+          <b>SCANNING...</b>
+        </div>
       )}
+      <button
+        onClick={toggleFullscreen}
+        style={{
+          ...UI_ButtonStyle,
+          position: "absolute",
+          top: 0,
+          right: 0,
+        }}
+      >
+        {isFullscreen ? "🔲" : "🔳"}
+      </button>
     </div>
   );
 };
 
-function UI_Scan() {
-  return (
-    <div
-      style={{
-        ...UI_ButtonStyle,
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        letterSpacing: "4px",
-      }}
-    >
-      <b>SCANNING...</b>
-    </div>
-  );
-}
-
 function UI_Loading() {
+  // https://drei.docs.pmnd.rs/loaders/progress-use-progress
+  const { active, progress, errors, item, loaded, total } = useProgress();
+
+  useEffect(() => {
+    console.log(
+      `> Loading asset (${loaded}/${total}): ${item}\n | Progress: ${progress} | Active: ${active} | Errors: ${errors} |`
+    );
+  }, [active, progress, errors, item, loaded, total]);
+
   return (
     <div
       style={{
@@ -502,13 +515,15 @@ function UI_Loading() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        backgroundColor: "rgba(0, 0, 0, 1)",
         color: "#fff",
         fontSize: "2rem",
+        textAlign: "center",
         zIndex: 1000,
       }}
     >
-      Loading...
+      Loading... <br />
+      {progress}%
     </div>
   );
 }
@@ -557,3 +572,5 @@ function ARExperience() {
 export default ARExperience;
 
 // TODO: convert to typescript
+// TODO: apply rotation fix for models
+// TODO: add green screen shader and marki stock video
