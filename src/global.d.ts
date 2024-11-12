@@ -1,6 +1,8 @@
 // https://stackoverflow.com/a/78276639
 
-declare module "*.jsx" {
-  var _: () => any;
-  export default _;
-}
+// TODO: remove if unused!
+
+// declare module "*.jsx" {
+//   var _: () => any;
+//   export default _;
+// }

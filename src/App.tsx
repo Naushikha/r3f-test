@@ -3,7 +3,7 @@ import "./App.css";
 // import SceneVR from "./components/SceneVR";
 // import SceneRollerCoaster from "./components/SceneRollerCoaster";
 // import SceneVR360 from "./components/SceneVR360";
-import AR from "./components/WorkingAR.jsx";
+import AR from "./components/SceneAR";
 
 function App() {
   return (

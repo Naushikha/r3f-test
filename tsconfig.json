@@ -6,5 +6,10 @@
   ],
   "compilerOptions": {
     // "allowJs": true
+    // TODO: remove below if unused
+    "baseUrl": "src", // Set the base directory
+    "paths": {
+      "core/AR": ["components/core/AR.jsx"] // Alias for AR.jsx
+    }
   }
 }
