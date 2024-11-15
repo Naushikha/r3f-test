@@ -275,7 +275,8 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
     >
       <UI_HUD />
       <Suspense fallback={<UI_Loading />}>
-        <Canvas>
+        {/* TODO: Setup benchmarking system https://discourse.threejs.org/t/texture-is-causing-loss-of-context-in-ipados-ios-17-5-1-when-using-react-three-fiber/68643/10 */}
+        <Canvas gl={{ powerPreference: "default", antialias: false }}>
           {/* <GizmoHelper
             alignment="bottom-right" // widget alignment within scene
             margin={[80, 80]} // widget margins (X, Y)
