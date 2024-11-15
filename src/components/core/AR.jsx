@@ -19,6 +19,8 @@ const isWebcamFacingUserAtom = atom(false);
 const flipUserCameraAtom = atom(false);
 const isViewingMode3DAtom = atom(false); // Switch between AR / 3D
 const isAnyTargetVisibleAtom = atom(false);
+const errorStateAtom = atom(false); // Not good to overuse atoms imo
+const errorDescAtom = atom("");
 
 const invisibleMatrix = new Matrix4().set(
   0,
@@ -60,6 +62,13 @@ function ARProvider({
   const controllerRef = useRef(null);
 
   const resize = useCallback(() => {
+    if (
+      !controllerRef.current |
+      !containerRef.current |
+      !webcamRef.current |
+      !camera
+    )
+      return;
     console.log("Resizing view");
 
     // This bit is very important!
@@ -249,6 +258,8 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
   const webcamRef = useRef();
   const canvasContainerRef = useRef();
   const setWebcamReady = useSetAtom(webcamReadyAtom);
+  const setErrorState = useSetAtom(errorStateAtom);
+  const setErrorDesc = useSetAtom(errorDescAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
   const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
@@ -262,6 +273,12 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
     }
   }, [webcamRef]);
 
+  const handleWebcamError = (error) => {
+    console.log(error);
+    setErrorState(true);
+    setErrorDesc("Please give camera permissions to proceed.");
+  };
+
   return (
     <div
       id="ar-canvas-container"
@@ -274,6 +291,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
       }}
     >
       <UI_HUD />
+      <UI_Error />
       <Suspense fallback={<UI_Loading />}>
         {/* TODO: Setup benchmarking system https://discourse.threejs.org/t/texture-is-causing-loss-of-context-in-ipados-ios-17-5-1-when-using-react-three-fiber/68643/10 */}
         <Canvas gl={{ powerPreference: "default", antialias: false }}>
@@ -301,6 +319,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
       <Webcam
         ref={webcamRef}
         onUserMedia={handleWebcam}
+        onUserMediaError={handleWebcamError}
         style={{
           position: "absolute",
           top: 0,
@@ -388,6 +407,23 @@ const UI_ButtonStyle = {
   alignItems: "center",
   gap: "8px",
   pointerEvents: "auto",
+};
+
+const UI_OverlayStyle = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: "100vw",
+  height: "100vh",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0, 0, 0, 1)",
+  color: "#fff",
+  fontSize: "2rem",
+  textAlign: "center",
+  zIndex: 1000,
 };
 
 function UI_HUD() {
@@ -501,6 +537,39 @@ function UI_HUD() {
   );
 }
 
+function UI_Error() {
+  const errorState = useAtomValue(errorStateAtom);
+  const errorDesc = useAtomValue(errorDescAtom);
+  const [refreshTime, setRefreshTime] = useState(10);
+
+  useEffect(() => {
+    if (errorState) {
+      let refreshTimeVar = refreshTime;
+      const timer = setInterval(() => {
+        refreshTimeVar--;
+        setRefreshTime(refreshTimeVar);
+        if (refreshTimeVar <= 0) {
+          clearInterval(timer);
+          window.location.reload();
+        }
+      }, 1000);
+    }
+  }, [errorState]);
+
+  return (
+    errorState && (
+      <div style={{ ...UI_OverlayStyle }}>
+        <b>Whoops!</b> <br />
+        Something went wrong.
+        <br />-<br />
+        <small>{errorDesc}</small>
+        <br />
+        Refreshing in {refreshTime} seconds...
+      </div>
+    )
+  );
+}
+
 function UI_Loading() {
   // https://drei.docs.pmnd.rs/loaders/progress-use-progress
   const { active, progress, errors, item, loaded, total } = useProgress();
@@ -512,23 +581,7 @@ function UI_Loading() {
   }, [active, progress, errors, item, loaded, total]);
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 1)",
-        color: "#fff",
-        fontSize: "2rem",
-        textAlign: "center",
-        zIndex: 1000,
-      }}
-    >
+    <div style={UI_OverlayStyle}>
       Loading... <br />
       {progress}%
     </div>
