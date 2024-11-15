@@ -11,6 +11,7 @@ import {
   OrbitControls,
   useProgress,
 } from "@react-three/drei";
+import screenfull from "screenfull";
 
 const targetsAtom = atom({});
 const webcamReadyAtom = atom(false);
@@ -248,7 +249,6 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
   const webcamRef = useRef();
   const canvasContainerRef = useRef();
   const setWebcamReady = useSetAtom(webcamReadyAtom);
-  const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
   const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
@@ -404,13 +404,9 @@ function UI_HUD() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      });
-    } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
+    if (screenfull.isEnabled) {
+      screenfull.toggle(document.documentElement).then(() => {
+        setIsFullscreen(!isFullscreen);
       });
     }
   };

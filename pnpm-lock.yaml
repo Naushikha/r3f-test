@@ -38,6 +38,9 @@ importers:
       react-webcam:
         specifier: ^7.2.0
         version: 7.2.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      screenfull:
+        specifier: ^6.0.2
+        version: 6.0.2
       three:
         specifier: ^0.169.0
         version: 0.169.0
@@ -1678,6 +1681,10 @@ packages:
 
   scheduler@0.23.2:
     resolution: {integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==}
+
+  screenfull@6.0.2:
+    resolution: {integrity: sha512-AQdy8s4WhNvUZ6P8F6PB21tSPIYKniic+Ogx0AacBMjKP1GUHN2E9URxQHtCusiwxudnCKkdy4GrHXPPJSkCCw==}
+    engines: {node: ^14.13.1 || >=16.0.0}
 
   seedrandom@3.0.5:
     resolution: {integrity: sha512-8OwmbklUNzwezjGInmZ+2clQmExQPvomqjL7LFqOYqtmuxRgQYqOD3mHaU+MvZn5FLUeVxVfQjwLZW/n/JFuqg==}
@@ -3624,6 +3631,8 @@ snapshots:
   scheduler@0.23.2:
     dependencies:
       loose-envify: 1.4.0
+
+  screenfull@6.0.2: {}
 
   seedrandom@3.0.5: {}
 
