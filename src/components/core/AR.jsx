@@ -466,17 +466,17 @@ function UI_HUD() {
     <div
       style={{
         position: "absolute",
-        zIndex: 1,
+        zIndex: 20,
         width: "100vw",
-        height: "100vh",
+        height: "100dvh", // https://stackoverflow.com/a/76673307
         pointerEvents: "none",
       }}
     >
       <div
         style={{
           position: "absolute",
-          bottom: 0,
-          right: 0,
+          bottom: "10px",
+          right: "10px",
           display: "flex",
           flexDirection: "row",
           gap: "16px",
@@ -518,8 +518,8 @@ function UI_HUD() {
           style={{
             ...UI_ButtonStyle,
             position: "absolute",
-            bottom: 0,
-            left: 0,
+            bottom: "10px",
+            left: "10px",
             letterSpacing: "4px",
             cursor: "default",
           }}
@@ -532,8 +532,8 @@ function UI_HUD() {
         style={{
           ...UI_ButtonStyle,
           position: "absolute",
-          top: 0,
-          right: 0,
+          top: "10px",
+          right: "10px",
         }}
       >
         {isFullscreen ? "🔲" : "🔳"}
@@ -544,8 +544,8 @@ function UI_HUD() {
           style={{
             ...UI_ButtonStyle,
             position: "absolute",
-            top: 0,
-            left: 0,
+            top: "10px",
+            left: "10px",
           }}
         >
           {isAudioMuted ? "🔊" : "🔇"}
