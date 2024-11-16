@@ -1,5 +1,12 @@
+import { useEffect } from "react";
 import { Html } from "@react-three/drei";
 import ReactPlayer from "react-player";
+import { useAtomValue } from "jotai";
+import {
+  isAudioMutedAtom,
+  increaseCurrentlyPlayingAudioCount,
+  reduceCurrentlyPlayingAudioCount,
+} from "../AppState";
 
 interface YouTubeProps {
   URL?: string;
@@ -16,6 +23,14 @@ const YouTube: React.FC<YouTubeProps> = ({
   scale = [0.1, 0.1, 0.1],
   playing = false,
 }) => {
+  useEffect(() => {
+    if (playing) {
+      increaseCurrentlyPlayingAudioCount();
+    } else {
+      reduceCurrentlyPlayingAudioCount();
+    }
+  }, [playing]);
+  const isAudioMuted = useAtomValue(isAudioMutedAtom);
   return (
     <Html
       style={{ userSelect: "none" }}
@@ -30,7 +45,10 @@ const YouTube: React.FC<YouTubeProps> = ({
       <ReactPlayer
         url={URL}
         playing={playing}
-        loop={true}
+        pip={false}
+        loop
+        playsinline
+        muted={isAudioMuted}
         style={{ visibility: playing ? "visible" : "hidden" }} // https://github.com/pmndrs/drei/issues/1323
       />
     </Html>

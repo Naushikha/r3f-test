@@ -3,7 +3,7 @@ import { Matrix4, Quaternion, Vector3 } from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import Webcam from "react-webcam";
 import { Controller as ImageTargetController } from "mind-ar/dist/mindar-image.prod.js";
-import { atom, useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   Environment,
   GizmoHelper,
@@ -12,6 +12,7 @@ import {
   useProgress,
 } from "@react-three/drei";
 import screenfull from "screenfull";
+import { isAudioMutedAtom, currentlyPlayingAudioCountAtom } from "./AppState";
 
 const targetsAtom = atom({});
 const webcamReadyAtom = atom(false);
@@ -54,8 +55,7 @@ function ARProvider({
 }) {
   const { camera } = useThree();
   const isInitialRender = useRef(true);
-  const targets = useAtomValue(targetsAtom);
-  const setTargets = useSetAtom(targetsAtom);
+  const [targets, setTargets] = useAtom(targetsAtom);
   const setIsAnyTargetVisible = useSetAtom(isAnyTargetVisibleAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
   const webcamReady = useAtomValue(webcamReadyAtom);
@@ -337,8 +337,7 @@ function ARCanvas({ children, imageTargetURL, filterMinCF, filterBeta }) {
 
 function ARTarget({ children, index = 0, onTargetFound, onTargetLost }) {
   const groupRef = useRef();
-  const targets = useAtomValue(targetsAtom);
-  const setTargets = useSetAtom(targetsAtom);
+  const [targets, setTargets] = useAtom(targetsAtom);
   const flipUserCamera = useAtomValue(flipUserCameraAtom);
   const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
 
@@ -427,16 +426,18 @@ const UI_OverlayStyle = {
 };
 
 function UI_HUD() {
-  const isWebcamFacingUser = useAtomValue(isWebcamFacingUserAtom);
-  const setIsWebcamFacingUser = useSetAtom(isWebcamFacingUserAtom);
+  const [isWebcamFacingUser, setIsWebcamFacingUser] = useAtom(
+    isWebcamFacingUserAtom
+  );
   // You need to flip the camera in selfie mode
-  const flipUserCamera = useAtomValue(flipUserCameraAtom);
-  const setFlipUserCamera = useSetAtom(flipUserCameraAtom);
-
-  const isViewingMode3D = useAtomValue(isViewingMode3DAtom);
-  const setIsViewingMode3D = useSetAtom(isViewingMode3DAtom);
-
+  const [flipUserCamera, setFlipUserCamera] = useAtom(flipUserCameraAtom);
+  const [isViewingMode3D, setIsViewingMode3D] = useAtom(isViewingMode3DAtom);
   const isAnyTargetVisible = useAtomValue(isAnyTargetVisibleAtom);
+
+  const [isAudioMuted, setIsAudioMuted] = useAtom(isAudioMutedAtom);
+  const currentlyPlayingAudioCount = useAtomValue(
+    currentlyPlayingAudioCountAtom
+  );
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -446,6 +447,10 @@ function UI_HUD() {
         setIsFullscreen(!isFullscreen);
       });
     }
+  };
+
+  const toggleAudio = () => {
+    setIsAudioMuted(!isAudioMuted);
   };
 
   const handleSwitchCam = () => {
@@ -533,6 +538,19 @@ function UI_HUD() {
       >
         {isFullscreen ? "🔲" : "🔳"}
       </button>
+      {currentlyPlayingAudioCount > 0 && (
+        <button
+          onClick={toggleAudio}
+          style={{
+            ...UI_ButtonStyle,
+            position: "absolute",
+            top: 0,
+            left: 0,
+          }}
+        >
+          {isAudioMuted ? "🔊" : "🔇"}
+        </button>
+      )}
     </div>
   );
 }

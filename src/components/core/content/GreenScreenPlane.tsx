@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import { useEffect, useRef, useState } from "react";
 import ChromaKeyMaterial from "../shader/ChromaKeyMaterial";
+import {
+  isAudioMutedAtom,
+  reduceCurrentlyPlayingAudioCount,
+  increaseCurrentlyPlayingAudioCount,
+} from "../AppState";
+import { useAtomValue } from "jotai";
 
 interface GreenScreenPlaneProps {
   videoURL?: string;
@@ -28,12 +34,14 @@ const GreenScreenPlane: React.FC<GreenScreenPlaneProps> = ({
   const greenScreenPlaneRef = useRef<THREE.Mesh>(null!);
   const chromaKeyMaterial = useRef<THREE.Material>(null!);
   const greenScreenVidRef = useRef<HTMLVideoElement>(null!);
+  const isAudioMuted = useAtomValue(isAudioMutedAtom);
 
   useEffect(() => {
     const greenScreenVid = document.createElement("video");
     greenScreenVidRef.current = greenScreenVid;
     greenScreenVid.src = videoURL;
     greenScreenVid.loop = true;
+    greenScreenVidRef.current.muted = true;
     greenScreenVid.crossOrigin = "anonymous";
     greenScreenVid.playsInline = true;
     greenScreenVid.load();
@@ -54,6 +62,11 @@ const GreenScreenPlane: React.FC<GreenScreenPlaneProps> = ({
         chromaKeySpill
       );
       chromaKeyMaterial.current.side = THREE.DoubleSide;
+      // Small hack to prevent black screen on iOS
+      greenScreenVid.play();
+      setTimeout(() => {
+        greenScreenVid.pause();
+      }, 500);
 
       setVideoLoaded(true);
     });
@@ -72,10 +85,19 @@ const GreenScreenPlane: React.FC<GreenScreenPlaneProps> = ({
 
   useEffect(() => {
     if (videoLoaded) {
-      if (playing) greenScreenVidRef.current.play();
-      else greenScreenVidRef.current.pause();
+      if (playing) {
+        increaseCurrentlyPlayingAudioCount();
+        greenScreenVidRef.current.play();
+      } else {
+        reduceCurrentlyPlayingAudioCount();
+        greenScreenVidRef.current.pause();
+      }
     }
   }, [playing]);
+
+  useEffect(() => {
+    greenScreenVidRef.current.muted = isAudioMuted;
+  }, [isAudioMuted]);
 
   return videoLoaded ? (
     <mesh
