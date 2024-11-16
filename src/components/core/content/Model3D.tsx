@@ -1,5 +1,7 @@
-import { useLoader } from "@react-three/fiber";
-import { GLTFLoader } from "three/examples/jsm/Addons.js";
+import * as THREE from "three";
+import { useEffect, useMemo, useRef } from "react";
+import { useFrame, useLoader } from "@react-three/fiber";
+import { GLTFLoader, SkeletonUtils } from "three/examples/jsm/Addons.js";
 
 interface Model3DProps {
   URL?: string;
@@ -9,7 +11,12 @@ interface Model3DProps {
   onClick?: () => void;
 }
 
-// https://stackoverflow.com/questions/68813736/use-the-same-gltf-model-twice-in-react-three-fiber-drei-three-js
+// https://github.com/pmndrs/react-three-fiber/issues/245
+function useMeshCloneForGLTF(URL: string) {
+  const gltf = useLoader(GLTFLoader, URL);
+  const clonedScene = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf]);
+  return { gltfScene: clonedScene, gltfAnimations: gltf.animations };
+}
 
 const Model3D: React.FC<Model3DProps> = ({
   URL = "/car.glb",
@@ -18,7 +25,20 @@ const Model3D: React.FC<Model3DProps> = ({
   scale = [1, 1, 1],
   onClick = () => {},
 }) => {
-  const gltf = useLoader(GLTFLoader, URL);
+  const { gltfScene, gltfAnimations } = useMeshCloneForGLTF(URL);
+  const mixer = useRef<THREE.AnimationMixer>(null!);
+
+  useEffect(() => {
+    if (gltfAnimations.length > 0) {
+      mixer.current = new THREE.AnimationMixer(gltfScene);
+      mixer.current.clipAction(gltfAnimations[0]).play();
+    }
+  }, [gltfScene]);
+
+  useFrame((_, delta) => {
+    mixer.current && mixer.current.update(delta);
+  });
+
   return (
     <mesh
       position={position}
@@ -29,7 +49,7 @@ const Model3D: React.FC<Model3DProps> = ({
         onClick && onClick();
       }}
     >
-      <primitive object={gltf.scene.clone()} />
+      <primitive object={gltfScene} />
     </mesh>
   );
 };

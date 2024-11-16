@@ -22,8 +22,18 @@ function ARExperience() {
           setMarkiPlay(false);
         }}
       >
-        <Model3D URL="/car.glb" />
-        <GreenScreenPlane playing={markiPlay} />
+        <Model3D />
+        <Model3D
+          URL="/sophia.glb"
+          scale={[0.005, 0.005, 0.005]}
+          position={[0.9, 0, 0]}
+          rotation={[0, 0, 0]}
+        />
+        <GreenScreenPlane
+          playing={markiPlay}
+          position={[-0.7, 0.6, -0.5]}
+          sizeMultiplier={1}
+        />
         <YouTube playing={markiPlay} />
         {/* <mesh>
                       <boxGeometry args={[1, 1, 0.1]} />
